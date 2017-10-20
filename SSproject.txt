@@ -1,0 +1,235 @@
+[road,fs]=wavread('C:\Documents and Settings\asd\My Documents\Downloads\Music\hootie'); % loads “the long and winding road” clip
+left=road(:,1);
+time=(1/44100)*length(left);
+t=linspace(0,time,length(left));
+plot(t,left)
+xlabel('time (sec)');
+
+
+ylabel('relative signal strength')
+time=(1/44100)*2000;
+t=linspace(0,time,2000);
+plot(t,left(1:2000))
+xlabel('time (sec)');
+ylabel('relative signal strength')
+  
+
+
+soundsc(left,fs)       % plays left channel as mono
+ 
+
+
+soundsc(road,fs)        % play as stereo
+
+% REVERSE PLAYING
+
+y=[1;2;3;4;5]
+y2=flipud(y)
+ left2=flipud(left);
+soundsc(left2,fs);
+
+
+
+ % DELAYING
+
+
+
+leftout=left;  % set up a new array, same size as old one
+          N=10000;  % delay amount N/44100 seconds
+for n=N+1:length(left)
+leftout(n)=left(n)+left(n-N);  % approximately ¼ second echo
+end
+
+soundsc(leftout,fs) % signal with new echo
+
+
+
+
+out=road;  % set up a new array, same size as old one
+          N=10000;  % delay amount N/44100 seconds
+for n=N+1:length(road)
+          out(n,1)=road(n,1)+road(n-N,2);  % echo right-to-left!
+out(n,2)=road(n,2)+road(n-N,1);  % echo left-to-right!
+end
+ 
+soundsc(road,fs) % original
+ 
+     soundsc(out,fs) % echo
+ 
+
+
+%LOW PASS FILTER
+
+[hootie,fs]=wavread('C:\Documents and Settings\asd\My Documents\Downloads\Music\hootie'); % loads “the long and winding road” clip
+
+for n=2:length(hootie)
+ 
+out(n,1)=.9*out(n-1,1)+hootie(n,1); % left
+out(n,2)=.9*out(n-1,2)+hootie(n,2); % right
+ 
+end
+ 
+
+
+
+
+
+soundsc(out,fs)            % low pass filtered
+
+
+
+
+
+
+soundsc(hootie,fs/1.5) % How slow can you go?
+ 
+soundsc(hootie,fs*1.5) % The Chimpmonks!
+
+
+
+
+
+
+%creating a wave
+fs = 44100;       
+t = 0 : 1/fs : 2; 
+f = 200;           
+A = .5;           
+w = 0 * pi/180; % degrees 
+y = A * sin( 2 * pi * f * t + w );
+plot(t,y)
+sound( y, fs, 16 );
+
+
+
+% phase cancellation
+fs = 44100; % sampling frequency (Hz)
+t = 0 : 1/fs : 5; % time axis (seconds)
+f1 = 440; % frequency (Hz)
+f2 = 440;
+A1 = .3;
+A2 = .3;
+w1 = 0; % phase in degrees
+w2 = 180; % phase in degrees
+y1 = A1 * sin( 2 * pi * f1 * t + w1 * pi/180 );
+y2 = A2 * sin( 2 * pi * f2 * t + w2 * pi/180 );
+y = (y1+y2)/2;
+sound( y, fs, 16 );
+
+
+
+
+%coctail party effect
+
+fs = 44100;       
+t = 0 : 1/fs : 5; 
+f1 = 300;           
+f2 = 310;           
+A = .5;           
+w = 0 * pi/180; % degrees 
+y1 = A * sin(2 * pi * f1 * t + w );
+y2 = A * sin(2 * pi * f2 * t + w );
+
+y=[y1;y2];
+sound( y, fs, 16 );
+
+
+
+
+fs = 44100; % sampling frequency (Hz)
+t = 0 : 1/fs : 5; % time axis (seconds)
+f1 = 440; % frequency (Hz)
+f2 = 2 * f1
+f3 = 3 * f1;
+f4 = 4 * f1;
+A1 = .3; A2 = A1/2; A3 = A1/3; A4 = A1/4;
+w = 0; % phase
+
+y1 = A1 * sin( 2 * pi * f1 * t + w );
+y2 = A2 * sin( 2 * pi * f2 * t + w );
+y3 = A3 * sin( 2 * pi * f3 * t + w );
+y4 = A4 * sin( 2 * pi * f4 * t + w );
+y = (y1+y2+y3+y4)/4;
+sound( y, fs, 16 ); % playback sinewave
+
+
+%MODULATION
+y=[y1 y2 y3 y4];
+soundsc( y, 44100 );
+
+
+m=modulate(y, 20, fs, 'fm'); % Frequency modulation
+soundsc(m, fs)
+
+n=modulate(y, .5, fs, 'am'); % Amplitude modulation
+soundsc(n, fs)
+
+
+
+%spectrogram
+
+win = 128 % window length in samples
+% number of samples between overlapping windows:
+hop = win/2            
+
+nfft = win % width of each frequency bin 
+spectrogram(y,win,hop,nfft,fs,'yaxis')
+
+% change the tick labels of the graph from scientific notation to floating point: 
+yt = get(gca,'YTick');  
+set(gca,'YTickLabel', sprintf('%.0f|',yt))
+
+
+%SHEPHERED TONES
+
+%Parameters:
+fs   = 16000;
+d    = 1; % time after which waveform repeats 
+fmin = 300; % lowest frequency
+fmax = 3400; % highest frequency
+n = 5; % number of tones
+t = 0: 1/fs : d-1/fs; % timestamps for each sample point
+
+% normalized logarithm of frequency of each tone (row)
+% for each sample point (column), all rising linearly
+% from 0 to 1, then wrap around back to 0
+l = mod(([0:n-1]/n)'  * ones(1, fs*d) + ones(n,1) * (t/(d*n)), 1);
+f = fmin * (fmax/fmin) .^ l;    % freq. for each tone and sample
+p = 2*pi * cumsum(f, 2) / fs;   % phase for each tone and sample
+% make last column a multiple of 2*pi for phase continuity
+p = diag((2*pi*floor(p(:,end)/(2*pi))) ./ p(:,end)) * p;
+s = sin(p); % sine value for each tone and sample
+% mixing amplitudes from raised-cosine curve over frequency
+a =0.5-0.5*cos(2*pi*l);
+w = sum(s .* a)/n; % mix tones together, normalize to [-1, +1]
+w = repmat(w, 1, 3);   % repeat waveform 3x
+specgram(w, 2048, fs, 2048, 1800);  ylim([0 4000])  % plot
+w = repmat(w, 1, 20);  % repeat waveform 20x
+soundsc(w,16000)
+
+
+
+
+%AMPLITUDE MODULATION
+load('handel')
+
+index = 1:length(y);
+
+Fc = 5; % frequency of trem
+A = .5; % amplitude of trem
+w = 0 % phase of trem
+
+trem=(w*pi/180 + A * sin(2*pi*index*(Fc/Fs)))'; 
+
+y = y .* trem;
+
+soundsc(y,Fs)
+
+
+
+
+
+
+
+
+
